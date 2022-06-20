@@ -6,21 +6,27 @@ import subprocess
 
 class Superset(Base):
 
-    def pre_run(self, executable, run_dir, config, env):
+    def pre_run(self, executable, run_dir):
         typer.echo(f"Executable in Use: {executable}")
-        typer.echo(f"Env in Use: {env} {json.loads(env).get('abc')}")
-        enriched_env = self._inject_env(json.loads(env), run_dir)
-        self._pre_config(enriched_env, config)
-        self._update_db(executable, enriched_env)
-        self._init_superset(executable, enriched_env)
+        env = self._get_env(run_dir)
+        self._pre_config(env, self._get_config_from_env(env))
+        self._upgrade_db(executable, env)
+        self._init_superset(executable, env)
 
-    def post_run(self, executable, run_dir, config, env):
+    def post_run(self, executable, run_dir):
         typer.echo(f"Executable in Use: {executable}")
-        typer.echo(f"Env in Use: {env} {json.loads(env).get('abc')}")
-        enriched_env = self._inject_env(json.loads(env), run_dir)
-        self._cleanup(enriched_env)
+        env = self._get_env(run_dir)
+        self._cleanup(env)
 
-    def _inject_env(self, env, run_dir):
+    def _get_config_from_env(self, env):
+        config = {}
+        for env_key, env_value in env.items():
+            if env_key.startswith('SUPERSET_GLUE_'):
+                config[(env_key.split('SUPERSET_GLUE_')[1]).lower()] = env_value
+        return config
+
+    def _get_env(self, run_dir):
+        env = dict(os.environ)
         env["SUPERSET_HOME"] = str(run_dir)
         env["SUPERSET_CONFIG_PATH"] = str(os.path.join(run_dir, 'superset_config.py'))
         env["FLASK_APP"] = "superset"
@@ -68,7 +74,7 @@ class Superset(Base):
             config_file.write("\n".join(config_script_lines))
         typer.echo(f"Created configuration at {config_path}")
 
-    def _update_db(self, executable, env):
+    def _upgrade_db(self, executable, env):
         typer.echo(f"Upgrade Superset db")
         subprocess.run(
             [
