@@ -1,0 +1,19 @@
+[tool.poetry]
+name = "superset_glue"
+version = "0.1.0"
+description = ""
+authors = ["pnadolny13 <patnadolny@gmail.com>"]
+
+[tool.poetry.dependencies]
+python = "^3.8"
+typer = {extras = ["all"], version = "^0.4.1"}
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.2"
+
+[build-system]
+requires = ["poetry-core>=1.0.0"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+superset-glue = "superset_glue.main:app"
